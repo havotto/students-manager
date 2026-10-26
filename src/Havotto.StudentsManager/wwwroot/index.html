@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Students Manager</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+        h1 { margin-bottom: 1rem; }
+        form { display: flex; gap: .5rem; flex-wrap: wrap; align-items: end; margin-bottom: 1rem; }
+        label { display: flex; flex-direction: column; font-size: .85rem; }
+        input { padding: .4rem; font-size: 1rem; }
+        button { padding: .45rem .9rem; font-size: 1rem; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #ddd; }
+        td.actions { white-space: nowrap; }
+        #error { color: #b00020; min-height: 1.2rem; white-space: pre-line; }
+        #empty { color: #666; }
+    </style>
+</head>
+<body>
+<h1>Students Manager</h1>
+
+<form id="student-form">
+    <input type="hidden" id="student-id">
+    <label>Name <input id="name" required maxlength="100"></label>
+    <label>Age <input id="age" type="number" required min="1" max="150"></label>
+    <label>Class <input id="className" required maxlength="50"></label>
+    <button type="submit" id="submit">Add</button>
+    <button type="button" id="cancel" hidden>Cancel</button>
+</form>
+<div id="error"></div>
+
+<table>
+    <thead><tr><th>ID</th><th>Name</th><th>Age</th><th>Class</th><th></th></tr></thead>
+    <tbody id="students"></tbody>
+</table>
+<p id="empty" hidden>No students yet.</p>
+
+<script>
+    const API = '/api/students';
+    const form = document.getElementById('student-form');
+    const idInput = document.getElementById('student-id');
+    const nameInput = document.getElementById('name');
+    const ageInput = document.getElementById('age');
+    const classInput = document.getElementById('className');
+    const submitButton = document.getElementById('submit');
+    const cancelButton = document.getElementById('cancel');
+    const errorBox = document.getElementById('error');
+    const tbody = document.getElementById('students');
+    const empty = document.getElementById('empty');
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            headers: { 'Content-Type': 'application/json' },
+            ...options
+        });
+        if (!response.ok) {
+            const problem = await response.json().catch(() => ({}));
+            const details = problem.errors ? Object.values(problem.errors).flat().join('\n') : '';
+            throw new Error(details || problem.detail || problem.title || `Request failed (${response.status})`);
+        }
+        return response.status === 204 ? null : response.json();
+    }
+
+    function showError(error) {
+        errorBox.textContent = error ? error.message : '';
+    }
+
+    function cell(text) {
+        const td = document.createElement('td');
+        td.textContent = text;
+        return td;
+    }
+
+    function button(text, onClick) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = text;
+        b.addEventListener('click', onClick);
+        return b;
+    }
+
+    function render(students) {
+        tbody.replaceChildren(...students.map(s => {
+            const tr = document.createElement('tr');
+            const actions = document.createElement('td');
+            actions.className = 'actions';
+            actions.append(button('Edit', () => startEdit(s)), ' ', button('Delete', () => remove(s)));
+            tr.append(cell(s.id), cell(s.name), cell(s.age), cell(s.className), actions);
+            return tr;
+        }));
+        empty.hidden = students.length > 0;
+    }
+
+    async function load() {
+        try {
+            render(await request(API));
+        } catch (e) {
+            showError(e);
+        }
+    }
+
+    function startEdit(student) {
+        idInput.value = student.id;
+        nameInput.value = student.name;
+        ageInput.value = student.age;
+        classInput.value = student.className;
+        submitButton.textContent = 'Save';
+        cancelButton.hidden = false;
+        showError(null);
+        nameInput.focus();
+    }
+
+    function resetForm() {
+        form.reset();
+        idInput.value = '';
+        submitButton.textContent = 'Add';
+        cancelButton.hidden = true;
+    }
+
+    async function remove(student) {
+        if (!confirm(`Delete ${student.name}?`)) return;
+        try {
+            await request(`${API}/${student.id}`, { method: 'DELETE' });
+            if (idInput.value === String(student.id)) resetForm();
+            showError(null);
+            await load();
+        } catch (e) {
+            showError(e);
+        }
+    }
+
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const id = idInput.value;
+        const body = JSON.stringify({
+            name: nameInput.value.trim(),
+            age: Number(ageInput.value),
+            className: classInput.value.trim()
+        });
+        try {
+            if (id) {
+                await request(`${API}/${id}`, { method: 'PUT', body });
+            } else {
+                await request(API, { method: 'POST', body });
+            }
+            resetForm();
+            showError(null);
+            await load();
+        } catch (e) {
+            showError(e);
+        }
+    });
+
+    cancelButton.addEventListener('click', () => {
+        resetForm();
+        showError(null);
+    });
+
+    load();
+</script>
+</body>
+</html>

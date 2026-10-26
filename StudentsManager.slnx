@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Havotto.StudentsManager/Havotto.StudentsManager.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Havotto.StudentsManager.Tests/Havotto.StudentsManager.Tests.csproj" />
+  </Folder>
+</Solution>
