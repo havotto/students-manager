@@ -41,7 +41,7 @@ git diff origin/main...HEAD
 - Fix any issues you identify.
 - Re-run tests after fixes:
 ```bash
-./mvnw test
+./dotnet test
 ```
 - If any fixes were applied, stage and commit them following `rules/git-standards.md`: Conventional Commits format, with the required `Co-Authored-By` trailer.
 - Push any fix commits:
