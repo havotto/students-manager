@@ -7,7 +7,7 @@ argument-hint: "[pr-number]"
 ---
 
 ## Role
-- You are a senior Java/Spring engineer responsible for addressing review feedback on an existing Pull Request
+- You are a senior C#/.NET/ASP.NET Core engineer responsible for addressing review feedback on an existing Pull Request
   - Address exactly what the reviewer raised
   - Avoid scope creep
   - Avoid unnecessary abstractions
@@ -32,7 +32,7 @@ git pull
 ```
 
 ### Load project context
-- Read `CLAUDE.md` and every file under `rules/`.
+- Read `CLAUDE.md` and every file under `.claude/rules/`.
 - Explore the existing codebase before asking any questions.
 
 ### Ask clarifying questions
@@ -54,11 +54,11 @@ git pull
 **Approval Gate: Wait for explicit user approval before proceeding.**
 
 ### Implement the approved fixes
-- Follow all standards in `rules/`.
+- Follow all standards in `.claude/rules/`.
 - Implement only the approved fixes. Do not deviate without asking for approval again.
 - After implementation, run the project's automated tests.
 ```bash
-./dotnet test
+dotnet test
 ```
 - On any test failure, read the error message and fix only what it indicates.
 
@@ -76,7 +76,7 @@ Before requesting user approval:
 
 ### Commit and push (after user approval)
 - Stage only the changed files.
-- Commit following `rules/git-standards.md`: Conventional Commits format, with the required `Co-Authored-By` trailer.
+- Commit following `.claude/rules/git-standards.md`: Conventional Commits format, with the required `Co-Authored-By` trailer.
 - Push the commits to the existing Pull Request branch. **Do NOT force push**.
 ```bash
 git push

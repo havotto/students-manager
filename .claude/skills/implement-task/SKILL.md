@@ -2,7 +2,7 @@
 name: implement-task
 description: Implement a GitHub task, read analysis, draft a plan, and implement 
 disable-model-invocation: true
-arguments: [task_number]
+arguments: task_number
 argument-hint: "[task-number]"
 ---
 
@@ -22,7 +22,7 @@ gh issue view $task_number --json number,title,body,comments
 - The analysis comment posted by `/analyze-task` contains key decisions and constraints. Implementation must reflect those decisions.
 
 ### Load project context
-- Read `CLAUDE.md`, every file under `rules/`, and explore the existing codebase.
+- Read `CLAUDE.md`, every file under `.claude/rules/`, and explore the existing codebase.
 - Every decision in the implementation must comply with them.
 
 ### Draft implementation plan
@@ -46,13 +46,13 @@ git checkout -b feature/task-$task_number
 - Never branch from another feature branch.
 
 ### Implement
-- Follow all standards in `rules/`.
+- Follow all standards in `.claude/rules/`.
 - Implement the approved plan exactly.
 - Do not deviate from the approved implementation plan without asking for approval again.
 - All new functionality must be covered by integration tests, following the project's testing standards.
 - After implementation, run the project's automated tests.
 ```bash
-./dotnet test
+dotnet test
 ```
 
 ### Self Review
@@ -69,7 +69,7 @@ Before requesting user approval:
 
 ### Commit and push (after user approval)
 - Stage only the changed files.
-- Commit following `rules/git-standards.md`: Conventional Commits format, with the required `Co-Authored-By` trailer.
+- Commit following `.claude/rules/git-standards.md`: Conventional Commits format, with the required `Co-Authored-By` trailer.
 - Push the branch:
 ```bash
 git push -u origin feature/task-$task_number

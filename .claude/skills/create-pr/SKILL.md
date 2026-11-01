@@ -24,7 +24,7 @@ git merge-tree origin/main HEAD
 
 ### Run tests
 ```bash
-./dotnet test
+dotnet test
 ```
 - All tests must pass before continuing.
 - On any test failure, read the error message and fix only what it indicates.
@@ -33,7 +33,7 @@ git merge-tree origin/main HEAD
 ```bash
 git diff origin/main...HEAD
 ```
-- Review the implementation against the standards defined in `rules/`.
+- Review the implementation against the standards defined in `.claude/rules/`.
 - Focus on:
   - Correctness
   - Maintainability
@@ -41,9 +41,9 @@ git diff origin/main...HEAD
 - Fix any issues you identify.
 - Re-run tests after fixes:
 ```bash
-./dotnet test
+dotnet test
 ```
-- If any fixes were applied, stage and commit them following `rules/git-standards.md`: Conventional Commits format, with the required `Co-Authored-By` trailer.
+- If any fixes were applied, stage and commit them following `.claude/rules/git-standards.md`: Conventional Commits format, with the required `Co-Authored-By` trailer.
 - Push any fix commits:
 ```bash
 git push
