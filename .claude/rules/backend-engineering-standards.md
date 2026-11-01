@@ -23,6 +23,7 @@ All backend source code must reside under the root namespace defined in `CLAUDE.
 - DTOs are `record` types and represent all API request and response models.
 - Entities are persistence models only. They are referenced only by `Data`,
   `Services`, and `Mappers`, and never appear in API responses.
+  Enums defined in `Entities` may also be used by DTOs.
 - Entity <-> DTO conversion happens only in `Mappers`.
 
 ## 3. Dependency Injection

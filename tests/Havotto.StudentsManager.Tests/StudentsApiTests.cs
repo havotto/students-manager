@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Havotto.StudentsManager.Dto;
+using Havotto.StudentsManager.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Havotto.StudentsManager.Tests;
@@ -9,9 +10,9 @@ public class StudentsApiTests : ApiTestBase
 {
     private const string Url = "/api/students";
 
-    private async Task<StudentResponse> CreateStudentAsync(string name = "Alice", int age = 20, string className = "10A")
+    private async Task<StudentResponse> CreateStudentAsync(string name = "Alice", int age = 20, string className = "10A", Sex sex = Sex.Male)
     {
-        var response = await Client.PostAsJsonAsync(Url, new StudentRequest(name, age, className), Ct);
+        var response = await Client.PostAsJsonAsync(Url, new StudentRequest(name, age, className, sex), Ct);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<StudentResponse>(Ct))!;
     }
@@ -49,7 +50,7 @@ public class StudentsApiTests : ApiTestBase
     public async Task ShouldCreateStudent()
     {
         // Arrange
-        var request = new StudentRequest("Alice", 20, "10A");
+        var request = new StudentRequest("Alice", 20, "10A", Sex.Male);
 
         // Act
         var response = await Client.PostAsJsonAsync(Url, request, Ct);
@@ -59,19 +60,21 @@ public class StudentsApiTests : ApiTestBase
         var created = await response.Content.ReadFromJsonAsync<StudentResponse>(Ct);
         Assert.NotNull(created);
         Assert.True(created.Id > 0);
-        Assert.Equal(new StudentResponse(created.Id, "Alice", 20, "10A"), created);
+        Assert.Equal(new StudentResponse(created.Id, "Alice", 20, "10A", Sex.Male), created);
         Assert.Equal($"{Url}/{created.Id}", response.Headers.Location?.AbsolutePath);
     }
 
     [Theory(DisplayName = "Should return 400 ValidationProblemDetails when create request is invalid")]
-    [InlineData("", 20, "10A", "Name")]
-    [InlineData("Alice", 0, "10A", "Age")]
-    [InlineData("Alice", 151, "10A", "Age")]
-    [InlineData("Alice", 20, "", "ClassName")]
-    public async Task ShouldReturn400WhenCreateInvalid(string name, int age, string className, string invalidField)
+    [InlineData("", 20, "10A", Sex.Male, "Name")]
+    [InlineData("Alice", 0, "10A", Sex.Male, "Age")]
+    [InlineData("Alice", 151, "10A", Sex.Male, "Age")]
+    [InlineData("Alice", 20, "", Sex.Male, "ClassName")]
+    [InlineData("Alice", 20, "10A", Sex.Unknown, "Sex")]
+    [InlineData("Alice", 20, "10A", (Sex)3, "Sex")]
+    public async Task ShouldReturn400WhenCreateInvalid(string name, int age, string className, Sex sex, string invalidField)
     {
         // Arrange
-        var request = new StudentRequest(name, age, className);
+        var request = new StudentRequest(name, age, className, sex);
 
         // Act
         var response = await Client.PostAsJsonAsync(Url, request, Ct);
@@ -81,6 +84,52 @@ public class StudentsApiTests : ApiTestBase
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>(Ct);
         Assert.NotNull(problem);
         Assert.Contains(problem.Errors.Keys, key => key.Equals(invalidField, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Theory(DisplayName = "Should create a student with sex and return it by ID")]
+    [InlineData(Sex.Male)]
+    [InlineData(Sex.Female)]
+    public async Task ShouldCreateStudentWithSex(Sex sex)
+    {
+        // Act
+        var created = await CreateStudentAsync(sex: sex);
+
+        // Assert
+        Assert.Equal(sex, created.Sex);
+        var fetched = await Client.GetFromJsonAsync<StudentResponse>($"{Url}/{created.Id}", Ct);
+        Assert.Equal(sex, fetched?.Sex);
+    }
+
+    [Fact(DisplayName = "Should return 400 ValidationProblemDetails when sex is missing")]
+    public async Task ShouldReturn400WhenSexMissing()
+    {
+        // Arrange
+        var body = new { name = "Alice", age = 20, className = "10A" };
+
+        // Act
+        var response = await Client.PostAsJsonAsync(Url, body, Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>(Ct);
+        Assert.NotNull(problem);
+        Assert.Contains(problem.Errors.Keys, key => key.Equals("Sex", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact(DisplayName = "Should return 400 and keep the stored sex when update sex is Unknown")]
+    public async Task ShouldReturn400WhenUpdateSexInvalid()
+    {
+        // Arrange
+        var created = await CreateStudentAsync(sex: Sex.Female);
+
+        // Act
+        var response = await Client.PutAsJsonAsync(
+            $"{Url}/{created.Id}", new StudentRequest("Alice", 20, "10A", Sex.Unknown), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var fetched = await Client.GetFromJsonAsync<StudentResponse>($"{Url}/{created.Id}", Ct);
+        Assert.Equal(Sex.Female, fetched?.Sex);
     }
 
     [Fact(DisplayName = "Should return a student by ID")]
@@ -115,14 +164,14 @@ public class StudentsApiTests : ApiTestBase
     {
         // Arrange
         var created = await CreateStudentAsync();
-        var request = new StudentRequest("Alice Smith", 21, "11B");
+        var request = new StudentRequest("Alice Smith", 21, "11B", Sex.Female);
 
         // Act
         var response = await Client.PutAsJsonAsync($"{Url}/{created.Id}", request, Ct);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var expected = new StudentResponse(created.Id, "Alice Smith", 21, "11B");
+        var expected = new StudentResponse(created.Id, "Alice Smith", 21, "11B", Sex.Female);
         Assert.Equal(expected, await response.Content.ReadFromJsonAsync<StudentResponse>(Ct));
         var fetched = await Client.GetFromJsonAsync<StudentResponse>($"{Url}/{created.Id}", Ct);
         Assert.Equal(expected, fetched);
@@ -132,7 +181,7 @@ public class StudentsApiTests : ApiTestBase
     public async Task ShouldReturn404WhenUpdatingMissing()
     {
         // Act
-        var response = await Client.PutAsJsonAsync($"{Url}/999", new StudentRequest("Alice", 20, "10A"), Ct);
+        var response = await Client.PutAsJsonAsync($"{Url}/999", new StudentRequest("Alice", 20, "10A", Sex.Male), Ct);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -148,7 +197,7 @@ public class StudentsApiTests : ApiTestBase
         var created = await CreateStudentAsync();
 
         // Act
-        var response = await Client.PutAsJsonAsync($"{Url}/{created.Id}", new StudentRequest("", 20, "10A"), Ct);
+        var response = await Client.PutAsJsonAsync($"{Url}/{created.Id}", new StudentRequest("", 20, "10A", Sex.Male), Ct);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
