@@ -1,9 +1,9 @@
 ---
 name: implement-task
-description: Implement a GitHub taks, read anaysis, draft a plan, and implement 
+description: Implement a GitHub task, read analysis, draft a plan, and implement 
 disable-model-invocation: true
 arguments: [task_number]
-argument-hint: "[argument_hint]"
+argument-hint: "[task-number]"
 ---
 
 ## Role
